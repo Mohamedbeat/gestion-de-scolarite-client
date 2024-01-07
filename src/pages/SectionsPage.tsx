@@ -19,11 +19,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useToast } from "@/components/ui/use-toast";
 import { API_URL } from "@/utils/config";
 import axios from "axios";
 import { Edit2, Plus, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export interface sectionDto {
   _id: string;
@@ -44,41 +52,141 @@ export default function SectionsPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [sectionsData, setSectionsData] = useState<sectionDto[] | null>(null);
 
+  const [sectionCodeFilter, setSectionCodeFilter] = useState<string>("");
+  const [specialityTitleFilter, setSpecialityTitleFilter] =
+    useState<string>("");
+  const [studentNumberFilter, setStudentNumberFilter] = useState<number>(0);
+
   const { toast } = useToast();
 
   const { theme } = useTheme();
 
+  const getSectionsData = async () => {
+    try {
+      setIsLoading(true);
+
+      const res = await axios.get(`${API_URL}/sections`, {
+        withCredentials: true,
+      });
+
+      setSectionsData(res.data.data);
+      setIsLoading(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: error.response.data.message,
+      });
+      setIsLoading(false);
+    }
+  };
   useEffect(() => {
-    const getSectionsData = async () => {
-      try {
-        setIsLoading(true);
+    getSectionsData();
+  }, []);
 
-        const res = await axios.get(`${API_URL}/sections`, {
-          withCredentials: true,
+  const filterData = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    const data = {
+      sectionCode: sectionCodeFilter,
+      specialityTitle: specialityTitleFilter,
+      studentNumber: studentNumberFilter,
+    };
+
+    try {
+      setIsLoading(true);
+      const res = await axios.post(`${API_URL}/sections/advancedSearch`, data, {
+        withCredentials: true,
+      });
+      setSectionsData(res.data.data);
+      setIsLoading(false);
+    } catch (error: any) {
+      console.log(error);
+
+      if (error.response.data.errors) {
+        toast({
+          variant: "destructive",
+          title: "Uh oh! Something went wrong.",
+          description: error.response.data.errors[0].msg,
         });
-
-        setSectionsData(res.data.data);
-        setIsLoading(false);
-      } catch (error: any) {
+      } else if (error.response.data) {
         toast({
           variant: "destructive",
           title: "Uh oh! Something went wrong.",
           description: error.response.data.message,
         });
-        setIsLoading(false);
       }
-    };
+    }
+  };
 
+  const resetFilters = () => {
+    setSectionCodeFilter("");
+    setSpecialityTitleFilter("");
+    setStudentNumberFilter(0);
     getSectionsData();
-  }, []);
+  };
 
   return (
     <ScrollArea>
       <LeftPageTitleAndContainer title="Sections">
+        <div className="w-full flex justify-end">
+          <Accordion type="single" collapsible className="w-full mr-6">
+            <AccordionItem value="item-1">
+              <AccordionTrigger>Filters</AccordionTrigger>
+              <AccordionContent>
+                <form action="">
+                  <div className="mt-3">
+                    <Label htmlFor="sectionCode" className="">
+                      section code
+                    </Label>
+                    <Input
+                      id="sectionCode"
+                      name="sectionCode"
+                      onChange={(e) => setSectionCodeFilter(e.target.value)}
+                    />
+                  </div>
+                  <div className="mt-3">
+                    <Label htmlFor="specialityTitle" className="">
+                      speciality title
+                    </Label>
+                    <Input
+                      id="specialityTitle"
+                      name="specialityTitle"
+                      onChange={(e) => setSpecialityTitleFilter(e.target.value)}
+                    />
+                  </div>
+                  <div className="mt-3">
+                    <Label htmlFor="studentsNumber" className="">
+                      students number
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      id="studentsNumber"
+                      name="studentsNumber"
+                      onChange={(e) =>
+                        setStudentNumberFilter(parseInt(e.target.value))
+                      }
+                    />
+                  </div>
+                  <div className="mt-3 w-full flex justify-end gap-3">
+                    <Button
+                      type="reset"
+                      onClick={resetFilters}
+                      variant={"secondary"}
+                    >
+                      Clear filters
+                    </Button>
+                    <Button onClick={filterData}>Search</Button>
+                  </div>
+                </form>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
         {isLoading && <Spinner />}
         {sectionsData && sectionsData.length !== 0 && (
           <>
-            <div className="w-full flex justify-end">
+            <div className="w-full flex justify-end mt-6">
               <Dialog>
                 <DialogTrigger asChild>
                   <Button>

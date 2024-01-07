@@ -45,30 +45,65 @@ export default function ModulesPage() {
   const { theme } = useTheme();
 
   const [modulesData, setModulesDate] = useState<moduleDto[]>();
+  const getSemestersData = async () => {
+    try {
+      setIsLoading(true);
+
+      const res = await axios.get(`${API_URL}/modules`, {
+        withCredentials: true,
+      });
+
+      setModulesDate(res.data.data);
+
+      setIsLoading(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: error.response.data.message,
+      });
+      setIsLoading(false);
+    }
+  };
   useEffect(() => {
-    const getSemestersData = async () => {
-      try {
-        setIsLoading(true);
+    getSemestersData();
+  }, []);
 
-        const res = await axios.get(`${API_URL}/modules`, {
-          withCredentials: true,
+  const filterData = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    try {
+      setIsLoading(true);
+
+      const res = await axios.get(`${API_URL}/semesters?`, {
+        withCredentials: true,
+      });
+
+      setModulesDate(res.data.data);
+      setIsLoading(false);
+    } catch (error: any) {
+      console.log(error);
+
+      if (error.response.data.errors) {
+        toast({
+          variant: "destructive",
+          title: "Uh oh! Something went wrong.",
+          description: error.response.data.errors[0].msg,
         });
-
-        setModulesDate(res.data.data);
-
-        setIsLoading(false);
-      } catch (error: any) {
+      } else if (error.response.data) {
         toast({
           variant: "destructive",
           title: "Uh oh! Something went wrong.",
           description: error.response.data.message,
         });
-        setIsLoading(false);
       }
-    };
+    }
+  };
+
+  const resetFilters = () => {
+    // setSectionCodeFilter("");
 
     getSemestersData();
-  }, []);
+  };
   return (
     <ScrollArea>
       <LeftPageTitleAndContainer title="Modules">
@@ -92,6 +127,7 @@ export default function ModulesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="">module code</TableHead>
+                  <TableHead className="">semester code</TableHead>
                   <TableHead>module title</TableHead>
                   <TableHead>module coef</TableHead>
                   <TableHead>elemination point</TableHead>
@@ -113,6 +149,7 @@ export default function ModulesPage() {
                     <TableCell className="font-medium">
                       {item.moduleCode}
                     </TableCell>
+                    <TableCell>{item.semesterCode}</TableCell>
                     <TableCell>{item.moduleTitle}</TableCell>
                     <TableCell>{item.moduleCoef}</TableCell>
                     <TableCell>{item.eleminationPoint}</TableCell>

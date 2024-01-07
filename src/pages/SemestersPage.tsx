@@ -24,7 +24,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { API_URL } from "@/utils/config";
 import axios from "axios";
 import { Edit2, Plus, Trash } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 export interface semesterDto {
   _id: string;
@@ -44,33 +52,104 @@ export default function SemestersPage() {
 
   const [semestersData, setSemesterDate] = useState<semesterDto[]>();
 
+  const [sectionCodeFilter, setSectionCodeFilter] = useState<string>("");
+
+  const getSemestersData = async () => {
+    try {
+      setIsLoading(true);
+
+      const res = await axios.get(`${API_URL}/semesters`, {
+        withCredentials: true,
+      });
+
+      setSemesterDate(res.data.data);
+      setIsLoading(false);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: error.response.data.message,
+      });
+      setIsLoading(false);
+    }
+  };
   useEffect(() => {
-    const getSemestersData = async () => {
-      try {
-        setIsLoading(true);
+    getSemestersData();
+  }, []);
 
-        const res = await axios.get(`${API_URL}/semesters`, {
+  const filterData = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    try {
+      setIsLoading(true);
+
+      const res = await axios.get(
+        `${API_URL}/semesters?sectionCode=${sectionCodeFilter || ""}`,
+        {
           withCredentials: true,
-        });
+        }
+      );
 
-        setSemesterDate(res.data.data);
-        setIsLoading(false);
-      } catch (error: any) {
+      setSemesterDate(res.data.data);
+      setIsLoading(false);
+    } catch (error: any) {
+      console.log(error);
+
+      if (error.response.data.errors) {
+        toast({
+          variant: "destructive",
+          title: "Uh oh! Something went wrong.",
+          description: error.response.data.errors[0].msg,
+        });
+      } else if (error.response.data) {
         toast({
           variant: "destructive",
           title: "Uh oh! Something went wrong.",
           description: error.response.data.message,
         });
-        setIsLoading(false);
       }
-    };
+    }
+  };
+
+  const resetFilters = () => {
+    setSectionCodeFilter("");
 
     getSemestersData();
-  }, []);
+  };
 
   return (
     <ScrollArea>
       <LeftPageTitleAndContainer title="Semester">
+        <div className="w-full flex justify-end">
+          <Accordion type="single" collapsible className="w-full mr-6">
+            <AccordionItem value="item-1">
+              <AccordionTrigger>Filters</AccordionTrigger>
+              <AccordionContent>
+                <form action="">
+                  <div className="mt-3">
+                    <Label htmlFor="sectionCode" className="">
+                      section code
+                    </Label>
+                    <Input
+                      id="sectionCode"
+                      name="sectionCode"
+                      onChange={(e) => setSectionCodeFilter(e.target.value)}
+                    />
+                  </div>
+                  <div className="mt-3 w-full flex justify-end gap-3">
+                    <Button
+                      type="reset"
+                      onClick={resetFilters}
+                      variant={"secondary"}
+                    >
+                      Clear filters
+                    </Button>
+                    <Button onClick={filterData}>Search</Button>
+                  </div>
+                </form>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
         {isLoading && <Spinner />}
         {semestersData && semestersData.length !== 0 && (
           <>

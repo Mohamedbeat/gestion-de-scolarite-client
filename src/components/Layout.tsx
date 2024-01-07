@@ -14,7 +14,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, []);
   return (
-    <div className="w-[1280px] p-5 flex  justify-between ">
+    <div className="w-[1280px] h-[100vh] p-5 flex  justify-between ">
       <SideMenu />
       <div className="flex-[3]">{children}</div>
     </div>
